@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jacksonfa/codebank/domain"
-	"github.com/jacksonfa/codebank/infra/repository"
-	"github.com/jacksonfa/codebank/usecase"
-	_ "github.com/lib/pg"
+	"github.com/JacksonFA/codebank/domain"
+	"github.com/JacksonFA/codebank/infra/repository"
+	"github.com/JacksonFA/codebank/usecase"
+	_ "github.com/lib/pq"
 )
 
 func main() {
