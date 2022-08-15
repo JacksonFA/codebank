@@ -1,4 +1,4 @@
-module github.com/jacksonfa/codebank
+module github.com/JacksonFA/codebank
 
 go 1.15
 
