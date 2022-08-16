@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/JacksonFA/codebank/domain"
+	"github.com/JacksonFA/codebank/infra/grpc/server"
+	"github.com/JacksonFA/codebank/infra/kafka"
 	"github.com/JacksonFA/codebank/infra/repository"
 	"github.com/JacksonFA/codebank/usecase"
 	_ "github.com/lib/pq"
@@ -14,22 +15,22 @@ import (
 func main() {
 	db := setupDb()
 	defer db.Close()
-	cc := domain.NewCreditCard()
-	cc.Number = "1234"
-	cc.Name = "Jackson"
-	cc.ExpirationYear = 2021
-	cc.ExpirationMonth = 7
-	cc.CVV = 123
-	cc.Limit = 1000
-	cc.Balance = 0
-	repo := repository.NewTransactionRepositoryDb(db)
-	repo.CreateCreditCard(*cc)
+	producer := setupKafkaProducer()
+	processTransactionUseCase := setupTransactionUseCase(db, producer)
+	serveGrpc(processTransactionUseCase)
 }
 
-func setupTransactionUseCase(db *sql.DB) usecase.UseCaseTransaction {
+func setupTransactionUseCase(db *sql.DB, producer kafka.KafkaProducer) usecase.UseCaseTransaction {
 	transactionRepository := repository.NewTransactionRepositoryDb(db)
 	useCase := usecase.NewUseCaseTransaction(transactionRepository)
+	useCase.KafkaProducer = producer
 	return useCase
+}
+
+func setupKafkaProducer() kafka.KafkaProducer {
+	producer := kafka.NewKafkaProducer()
+	producer.SetupProducer("host.docker.internal:9094")
+	return producer
 }
 
 func setupDb() *sql.DB {
@@ -46,3 +47,21 @@ func setupDb() *sql.DB {
 	}
 	return db
 }
+
+func serveGrpc(processTransactionUseCase usecase.UseCaseTransaction) {
+	grpcServer := server.NewGRPCServer()
+	grpcServer.ProcessTransactionUseCase = processTransactionUseCase
+	fmt.Println("Rodando gRPC Server")
+	grpcServer.Serve()
+}
+
+// cc := domain.NewCreditCard()
+// cc.Number = "1234"
+// cc.Name = "Jackson"
+// cc.ExpirationYear = 2021
+// cc.ExpirationMonth = 7
+// cc.CVV = 123
+// cc.Limit = 1000
+// cc.Balance = 0
+// repo := repository.NewTransactionRepositoryDb(db)
+// repo.CreateCreditCard(*cc)
